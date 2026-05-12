@@ -132,7 +132,11 @@ class GlsBridge
 
             return true;
         } catch (\Throwable $exception) {
-            $order->add_order_note(sprintf(__('GLS tracking sync failed: %s', 'ar-design-gls-fix'), sanitize_text_field($exception->getMessage())));
+            $order->add_order_note(sprintf(
+                /* translators: %s: GLS API or runtime error message. */
+                __('GLS tracking sync failed: %s', 'ar-design-gls-fix'),
+                sanitize_text_field($exception->getMessage())
+            ));
 
             return false;
         }

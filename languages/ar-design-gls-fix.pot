@@ -1,0 +1,142 @@
+# Copyright (C) 2026 Arpád Horák
+# This file is distributed under the GPLv2.
+msgid ""
+msgstr ""
+"Project-Id-Version: AR Design GLS Fix for WooCommerce 1.0.1\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/ar-design-gls-fix\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"POT-Creation-Date: 2026-05-12T08:42:07+00:00\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"X-Generator: WP-CLI 2.12.0\n"
+"X-Domain: ar-design-gls-fix\n"
+
+#. Plugin Name of the plugin
+#: ar-design-gls-fix.php
+msgid "AR Design GLS Fix for WooCommerce"
+msgstr ""
+
+#. Description of the plugin
+#: ar-design-gls-fix.php
+msgid "Samostatný GLS fix modul pre WooCommerce spravovaný Arpád Horák. Oddeľuje GLS automatizáciu od AR Design DPD modulu."
+msgstr ""
+
+#. Author of the plugin
+#: ar-design-gls-fix.php
+msgid "Arpád Horák"
+msgstr ""
+
+#. Author URI of the plugin
+#: ar-design-gls-fix.php
+msgid "https://arpad-horak.cz"
+msgstr ""
+
+#. translators: %s: minimum required WooCommerce version.
+#: ar-design-gls-fix.php:54
+#, php-format
+msgid "AR Design GLS Fix requires WooCommerce version %s or higher."
+msgstr ""
+
+#: includes/Automation.php:32
+#: includes/Automation.php:34
+msgid "GLS delivery status confirmed successful delivery."
+msgstr ""
+
+#: includes/Automation.php:42
+msgid "Invoice was prepared for cash on delivery follow-up email."
+msgstr ""
+
+#. translators: %s: GLS API or runtime error message.
+#: includes/GlsBridge.php:137
+#, php-format
+msgid "GLS tracking sync failed: %s"
+msgstr ""
+
+#: includes/GlsBridge.php:160
+msgid "Shipment exported to GLS"
+msgstr ""
+
+#: includes/Settings.php:23
+#: includes/Settings.php:25
+#: includes/Settings.php:72
+msgid "AR Design GLS Fix"
+msgstr ""
+
+#: includes/Settings.php:24
+msgid "Automation bridge for the GLS WooCommerce plugin."
+msgstr ""
+
+#: includes/Settings.php:36
+msgid "Enable GLS automation"
+msgstr ""
+
+#: includes/Settings.php:38
+msgid "Synchronize GLS shipments and delivery workflow automatically."
+msgstr ""
+
+#: includes/Settings.php:42
+msgid "Complete order after delivery"
+msgstr ""
+
+#: includes/Settings.php:44
+msgid "Change WooCommerce order status to completed when GLS confirms delivery."
+msgstr ""
+
+#: includes/Settings.php:52
+msgid "GLS Fix"
+msgstr ""
+
+#: includes/Settings.php:74
+msgid "Runs GLS tracking synchronization and delivered-order automation independently from the DPD module."
+msgstr ""
+
+#: includes/Shipment.php:70
+msgid "Shipment delivered"
+msgstr ""
+
+#. translators: %s: carrier label shown in the shipment summary, for example GLS.
+#: includes/TrackingDisplay.php:156
+#, php-format
+msgid "%s Shipment"
+msgstr ""
+
+#. translators: %s: carrier label shown in the shipment summary, for example GLS.
+#: includes/TrackingDisplay.php:164
+#, php-format
+msgid "Download %s label"
+msgstr ""
+
+#: includes/TrackingDisplay.php:172
+msgid "Tracking"
+msgstr ""
+
+#: includes/TrackingDisplay.php:183
+msgid "Current status"
+msgstr ""
+
+#: includes/TrackingDisplay.php:192
+msgid "Status date"
+msgstr ""
+
+#: includes/TrackingDisplay.php:196
+msgid "Location"
+msgstr ""
+
+#: includes/TrackingDisplay.php:200
+msgid "Last sync"
+msgstr ""
+
+#: includes/TrackingDisplay.php:204
+msgid "Last tracking error"
+msgstr ""
+
+#: includes/Updater.php:92
+msgid "Samostatný GLS fix modul pre WooCommerce spravovaný AR Design."
+msgstr ""
+
+#: includes/Updater.php:93
+msgid "Changelog nie je dostupný."
+msgstr ""
