@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.1
+
+- Pridano samostatne zobrazeni GLS shipment detailu v administraci objednavky a detailu objednavky.
+
 ## 1.0.0
 
 - Oddelen GLS bridge z modulu `ar-design-dpd` do samostatneho pluginu.

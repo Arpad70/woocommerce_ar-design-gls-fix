@@ -1,8 +1,12 @@
 # Release
 
-## 1.0.0
+## 1.0.1
 
-Prvni samostatny release modulu AR Design GLS Fix.
+Aktualni release modulu AR Design GLS Fix.
+
+### Zmeny
+
+- Samostatne zobrazeni GLS shipment detailu.
 
 ### Kontrola pred vydanim
 
