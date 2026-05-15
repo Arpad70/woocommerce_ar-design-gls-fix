@@ -3,7 +3,7 @@
 /*
  * Plugin Name: AR Design GLS Fix for WooCommerce
  * Description: Samostatný GLS fix modul pre WooCommerce spravovaný Arpád Horák. Oddeľuje GLS automatizáciu od AR Design DPD modulu.
- * Version: 1.0.2
+ * Version: 1.0.3
  * Author: Arpád Horák
  * Author URI: https://arpad-horak.cz
  * Update URI: https://github.com/Arpad70/woocommerce_ar-design-gls-fix
@@ -29,7 +29,7 @@ define('AR_DESIGN_GLS_FIX_PLUGIN_PATH', plugin_dir_path(__FILE__));
 define('AR_DESIGN_GLS_FIX_PLUGIN_DIR', $plugin_dir);
 define('AR_DESIGN_GLS_FIX_PLUGIN_INDEX', __FILE__);
 define('AR_DESIGN_GLS_FIX_PLUGIN_WC_MIN_VERSION', '7.0');
-define('AR_DESIGN_GLS_FIX_VERSION', '1.0.2');
+define('AR_DESIGN_GLS_FIX_VERSION', '1.0.3');
 define('AR_DESIGN_GLS_FIX_BASENAME', plugin_basename(__FILE__));
 define('AR_DESIGN_GLS_FIX_REPOSITORY', 'Arpad70/woocommerce_ar-design-gls-fix');
 define('AR_DESIGN_GLS_FIX_TEXT_DOMAIN', 'ar-design-gls-fix');
@@ -61,12 +61,14 @@ add_action('admin_notices', function () {
 
 add_action('plugins_loaded', function () {
     require_once AR_DESIGN_GLS_FIX_PLUGIN_PATH . 'includes/helpers.php';
+    require_once AR_DESIGN_GLS_FIX_PLUGIN_PATH . 'includes/SurchargeMonitor.php';
     require_once AR_DESIGN_GLS_FIX_PLUGIN_PATH . 'includes/Settings.php';
     require_once AR_DESIGN_GLS_FIX_PLUGIN_PATH . 'includes/Shipment.php';
     require_once AR_DESIGN_GLS_FIX_PLUGIN_PATH . 'includes/Tracking.php';
     require_once AR_DESIGN_GLS_FIX_PLUGIN_PATH . 'includes/TrackingDisplay.php';
     require_once AR_DESIGN_GLS_FIX_PLUGIN_PATH . 'includes/Automation.php';
     require_once AR_DESIGN_GLS_FIX_PLUGIN_PATH . 'includes/GlsBridge.php';
+    require_once AR_DESIGN_GLS_FIX_PLUGIN_PATH . 'includes/ShippingSurcharge.php';
 
     if (!is_woocommerce_active()) {
         return;
@@ -83,8 +85,10 @@ add_action('plugins_loaded', function () {
     }
 
     Settings::init();
+    SurchargeMonitor::init();
     Automation::init();
     GlsBridge::init();
+    ShippingSurcharge::init();
     TrackingDisplay::init();
 });
 

@@ -10,6 +10,9 @@ class Settings extends \WC_Shipping_Method
     public const SETTINGS_OPTION_KEY = 'woocommerce_ar_design_gls_fix_settings';
     public const TRACKING_ENABLED_OPTION_KEY = 'gls_tracking_enabled';
     public const AUTO_COMPLETE_ORDER_OPTION_KEY = 'gls_tracking_auto_complete_order';
+    public const FUEL_SURCHARGE_PERCENT_OPTION_KEY = 'gls_fuel_surcharge_percent';
+    public const TOLL_SURCHARGE_PERCENT_OPTION_KEY = 'gls_toll_surcharge_percent';
+    public const TOLL_SURCHARGE_FIXED_OPTION_KEY = 'gls_toll_surcharge_fixed';
 
     public static function init(): void
     {
@@ -44,7 +47,59 @@ class Settings extends \WC_Shipping_Method
                 'label' => __('Change WooCommerce order status to completed when GLS confirms delivery.', 'ar-design-gls-fix'),
                 'default' => 'yes',
             ],
+            self::FUEL_SURCHARGE_PERCENT_OPTION_KEY => [
+                'title' => __('Palivový príplatok (%)', 'ar-design-gls-fix'),
+                'type' => 'text',
+                'desc' => __('Percentuálny palivový príplatok aplikovaný na GLS sadzby dopravy (napr. 8.5).', 'ar-design-gls-fix'),
+                'default' => '0',
+                'desc_tip' => false,
+                'placeholder' => '0',
+            ],
+            self::TOLL_SURCHARGE_PERCENT_OPTION_KEY => [
+                'title' => __('Mýtny príplatok (%)', 'ar-design-gls-fix'),
+                'type' => 'text',
+                'desc' => __('Percentuálny mýtny príplatok aplikovaný na GLS sadzby dopravy.', 'ar-design-gls-fix'),
+                'default' => '0',
+                'desc_tip' => false,
+                'placeholder' => '0',
+            ],
+            self::TOLL_SURCHARGE_FIXED_OPTION_KEY => [
+                'title' => __('Mýtny príplatok (pevná suma)', 'ar-design-gls-fix'),
+                'type' => 'text',
+                'desc' => __('Pevná suma mýtneho príplatku pripočítaná raz ku každej GLS sadzbe dopravy.', 'ar-design-gls-fix'),
+                'default' => '0',
+                'desc_tip' => false,
+                'placeholder' => wc_format_localized_price(0),
+            ],
+            [
+                'type' => 'info',
+                'id' => self::SETTINGS_ID_KEY . '_surcharge_sync_info',
+                'title' => __('Kontrola cien z CRONu', 'ar-design-gls-fix'),
+                'text' => 
+                    \ArDesign\GlsFix\SurchargeMonitor::getAdminStatusHtml(),
+                'is_option' => false,
+                'row_class' => 'ard-surcharge-sync-info',
+            ],
         ];
+
+        $this->form_fields = self::injectSurchargeHelpers($this->form_fields);
+    }
+
+    private static function injectSurchargeHelpers(array $fields): array
+    {
+        $helpers = \ArDesign\GlsFix\SurchargeMonitor::getHelperTexts();
+
+        foreach ($helpers as $fieldKey => $helperText) {
+            if (!isset($fields[$fieldKey])) {
+                continue;
+            }
+
+            $baseDescription = (string) ($fields[$fieldKey]['desc'] ?? $fields[$fieldKey]['description'] ?? '');
+            $fields[$fieldKey]['desc'] = trim($baseDescription . ' ' . $helperText);
+            $fields[$fieldKey]['desc_tip'] = false;
+        }
+
+        return $fields;
     }
 
     public static function addShippingSection(array $sections): array
@@ -99,6 +154,9 @@ class Settings extends \WC_Shipping_Method
         return array_merge([
             self::TRACKING_ENABLED_OPTION_KEY => 'yes',
             self::AUTO_COMPLETE_ORDER_OPTION_KEY => 'yes',
+            self::FUEL_SURCHARGE_PERCENT_OPTION_KEY => '0',
+            self::TOLL_SURCHARGE_PERCENT_OPTION_KEY => '0',
+            self::TOLL_SURCHARGE_FIXED_OPTION_KEY => '0',
         ], $settings);
     }
 
