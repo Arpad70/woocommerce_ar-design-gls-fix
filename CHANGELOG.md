@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.7 - 2026-05-19
+
+- Opravené odpojenie pôvodného DPD order-list callbacku v administrácii, aby sa v produkcii nevykresľoval duplicitný obsah v stĺpci `Export to DPD`.
+- GLS guard pre DPD export teraz nahrádza pôvodný renderer korektne a pri GLS objednávkach zobrazuje iba `-` bez druhého tlačidla `Export`.
+
 ## 1.0.6 - 2026-05-19
 
 - Skrytý DPD `Export` button v stĺpci `Export to DPD` pre objednávky, ktoré už patria do GLS workflow, aby administrácia neponúkala zavádzajúci export do nesprávneho dopravcu.

@@ -125,15 +125,40 @@ final class AdminOrderList
 
     private static function replaceDpdColumnHooks(): void
     {
-        if (!class_exists('\ArDesign\DPD\OrderList') || !class_exists('\ArDesign\DPD\DpdExportSettings')) {
+        if (!class_exists('ArDesign\DPD\OrderList') || !class_exists('ArDesign\DPD\DpdExportSettings')) {
             return;
         }
 
-        remove_action('manage_shop_order_posts_custom_column', ['\ArDesign\DPD\OrderList', 'addOrderByDPDExportColumn'], 10);
-        remove_action('manage_woocommerce_page_wc-orders_custom_column', ['\ArDesign\DPD\OrderList', 'addOrderByDPDExportColumn'], 10);
+        self::removeStaticCallback('manage_shop_order_posts_custom_column', 'ArDesign\DPD\OrderList', 'addOrderByDPDExportColumn');
+        self::removeStaticCallback('manage_woocommerce_page_wc-orders_custom_column', 'ArDesign\DPD\OrderList', 'addOrderByDPDExportColumn');
 
         add_action('manage_shop_order_posts_custom_column', [__CLASS__, 'renderGuardedDpdExportColumn'], 10, 2);
         add_action('manage_woocommerce_page_wc-orders_custom_column', [__CLASS__, 'renderGuardedDpdExportColumn'], 10, 2);
+    }
+
+    private static function removeStaticCallback(string $hookName, string $className, string $methodName): void
+    {
+        global $wp_filter;
+
+        if (!isset($wp_filter[$hookName]) || !$wp_filter[$hookName] instanceof WP_Hook) {
+            return;
+        }
+
+        foreach ($wp_filter[$hookName]->callbacks as $priority => $callbacks) {
+            foreach ($callbacks as $callback) {
+                $function = $callback['function'] ?? null;
+
+                if (!is_array($function) || !isset($function[0], $function[1]) || !is_string($function[0])) {
+                    continue;
+                }
+
+                if (ltrim($function[0], '\\') !== $className || $function[1] !== $methodName) {
+                    continue;
+                }
+
+                remove_action($hookName, [$function[0], $methodName], (int) $priority);
+            }
+        }
     }
 
     /**
@@ -141,7 +166,7 @@ final class AdminOrderList
      */
     public static function renderGuardedDpdExportColumn(string $column, $orderOrOrderId = null): void
     {
-        if (!class_exists('\ArDesign\DPD\DpdExportSettings') || !class_exists('\ArDesign\DPD\OrderList')) {
+        if (!class_exists('ArDesign\DPD\DpdExportSettings') || !class_exists('ArDesign\DPD\OrderList')) {
             return;
         }
 
