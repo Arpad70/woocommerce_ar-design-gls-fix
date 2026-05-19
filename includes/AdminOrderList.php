@@ -20,6 +20,7 @@ final class AdminOrderList
         }
 
         self::replaceOriginalColumnHooks();
+        self::replaceDpdColumnHooks();
 
         add_filter('manage_edit-shop_order_columns', [__CLASS__, 'addTrackingColumn'], 20);
         add_filter('manage_woocommerce_page_wc-orders_columns', [__CLASS__, 'addTrackingColumn'], 20);
@@ -122,6 +123,45 @@ final class AdminOrderList
         }
     }
 
+    private static function replaceDpdColumnHooks(): void
+    {
+        if (!class_exists('\ArDesign\DPD\OrderList') || !class_exists('\ArDesign\DPD\DpdExportSettings')) {
+            return;
+        }
+
+        remove_action('manage_shop_order_posts_custom_column', ['\ArDesign\DPD\OrderList', 'addOrderByDPDExportColumn'], 10);
+        remove_action('manage_woocommerce_page_wc-orders_custom_column', ['\ArDesign\DPD\OrderList', 'addOrderByDPDExportColumn'], 10);
+
+        add_action('manage_shop_order_posts_custom_column', [__CLASS__, 'renderGuardedDpdExportColumn'], 10, 2);
+        add_action('manage_woocommerce_page_wc-orders_custom_column', [__CLASS__, 'renderGuardedDpdExportColumn'], 10, 2);
+    }
+
+    /**
+     * @param mixed $orderOrOrderId
+     */
+    public static function renderGuardedDpdExportColumn(string $column, $orderOrOrderId = null): void
+    {
+        if (!class_exists('\ArDesign\DPD\DpdExportSettings') || !class_exists('\ArDesign\DPD\OrderList')) {
+            return;
+        }
+
+        if ($column !== \ArDesign\DPD\DpdExportSettings::SETTINGS_ID_KEY) {
+            return;
+        }
+
+        $order = self::resolveOrder($orderOrOrderId);
+        if (!$order instanceof WC_Order) {
+            return;
+        }
+
+        if (self::isExplicitGlsOrder($order)) {
+            echo '-';
+            return;
+        }
+
+        \ArDesign\DPD\OrderList::addOrderByDPDExportColumn($column, $order);
+    }
+
     /**
      * @param mixed $orderOrOrderId
      */
@@ -188,5 +228,28 @@ final class AdminOrderList
     private static function isGlsShipment(array $shipment): bool
     {
         return GlsBridge::CARRIER === sanitize_key((string) ($shipment['carrier'] ?? ''));
+    }
+
+    private static function isExplicitGlsOrder(WC_Order $order): bool
+    {
+        if (self::getTrackingNumbers($order) !== []) {
+            return true;
+        }
+
+        if (self::getLabelUrl($order) !== '') {
+            return true;
+        }
+
+        foreach ($order->get_shipping_methods() as $shippingMethod) {
+            if (!is_object($shippingMethod) || !method_exists($shippingMethod, 'get_method_id')) {
+                continue;
+            }
+
+            if (false !== strpos(sanitize_key((string) $shippingMethod->get_method_id()), 'gls')) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

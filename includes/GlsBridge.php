@@ -53,6 +53,34 @@ class GlsBridge
         do_action('ard_shipping_shipment_updated', $order->get_id(), $shipmentData, $order);
     }
 
+    public static function isGlsOrder(WC_Order $order): bool
+    {
+        $shipment = Shipment::getShipmentData($order);
+        if (($shipment['carrier'] ?? '') === self::CARRIER) {
+            return true;
+        }
+
+        if (self::getTrackingNumbers($order) !== []) {
+            return true;
+        }
+
+        if (self::getSecureLabelUrl($order) !== '') {
+            return true;
+        }
+
+        foreach ($order->get_shipping_methods() as $shippingMethod) {
+            if (!is_object($shippingMethod) || !method_exists($shippingMethod, 'get_method_id')) {
+                continue;
+            }
+
+            if (false !== strpos(sanitize_key((string) $shippingMethod->get_method_id()), 'gls')) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public static function syncOpenShipments(): void
     {
         if (!Settings::isTrackingEnabled() || !self::ensureApiServiceLoaded()) {

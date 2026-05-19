@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.6 - 2026-05-19
+
+- Skrytý DPD `Export` button v stĺpci `Export to DPD` pre objednávky, ktoré už patria do GLS workflow, aby administrácia neponúkala zavádzajúci export do nesprávneho dopravcu.
+- GLS fix teraz pre detekciu GLS objednávok zohľadňuje shared shipment carrier, GLS tracking čísla, secure label URL aj GLS shipping method.
+
 ## 1.0.5 - 2026-05-19
 
 - Opraveny GLS order list fallbacky tak, aby stĺpec `GLS Tracking Number` zobrazoval iba skutočné GLS štítky a GLS tracking čísla.
