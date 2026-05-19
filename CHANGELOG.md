@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.5 - 2026-05-19
+
+- Opraveny GLS order list fallbacky tak, aby stĺpec `GLS Tracking Number` zobrazoval iba skutočné GLS štítky a GLS tracking čísla.
+- Zablokované zobrazenie DPD údajov v GLS stĺpci pri objednávkach so zdieľanými shipment meta dátami.
+
 ## 1.0.4 - 2026-05-19
 
 - GLS order list teraz zobrazuje vo stĺpci `GLS Tracking Number` tlačidlo `Stiahnuť štítok` a tracking čísla v rovnakom vizuálnom štýle ako AR Design DPD export stĺpec.

@@ -144,19 +144,25 @@ final class AdminOrderList
      */
     private static function getTrackingNumbers(WC_Order $order): array
     {
+        $trackingNumbers = GlsBridge::getTrackingNumbers($order);
+
+        if ([] !== $trackingNumbers) {
+            return array_values(array_unique(array_filter($trackingNumbers)));
+        }
+
         $shipment = Shipment::getShipmentData($order);
-        $trackingNumbers = array_values(array_filter(array_map('sanitize_text_field', (array) ($shipment['tracking_numbers'] ?? []))));
+        if (!self::isGlsShipment($shipment)) {
+            return [];
+        }
+
+        $fallbackTrackingNumbers = array_values(array_filter(array_map('sanitize_text_field', (array) ($shipment['tracking_numbers'] ?? []))));
         $primaryTrackingNumber = sanitize_text_field((string) ($shipment['tracking_number'] ?? ''));
 
-        if ('' !== $primaryTrackingNumber && !in_array($primaryTrackingNumber, $trackingNumbers, true)) {
-            array_unshift($trackingNumbers, $primaryTrackingNumber);
+        if ('' !== $primaryTrackingNumber && !in_array($primaryTrackingNumber, $fallbackTrackingNumbers, true)) {
+            array_unshift($fallbackTrackingNumbers, $primaryTrackingNumber);
         }
 
-        if ([] === $trackingNumbers) {
-            $trackingNumbers = GlsBridge::getTrackingNumbers($order);
-        }
-
-        return array_values(array_unique(array_filter($trackingNumbers)));
+        return array_values(array_unique(array_filter($fallbackTrackingNumbers)));
     }
 
     private static function getLabelUrl(WC_Order $order): string
@@ -167,8 +173,20 @@ final class AdminOrderList
         }
 
         $shipment = Shipment::getShipmentData($order);
+        if (!self::isGlsShipment($shipment)) {
+            return '';
+        }
+
         $labelUrl = (string) ($shipment['label_url'] ?? '');
 
         return '' !== $labelUrl ? esc_url_raw($labelUrl) : '';
+    }
+
+    /**
+     * @param array<string, mixed> $shipment
+     */
+    private static function isGlsShipment(array $shipment): bool
+    {
+        return GlsBridge::CARRIER === sanitize_key((string) ($shipment['carrier'] ?? ''));
     }
 }
