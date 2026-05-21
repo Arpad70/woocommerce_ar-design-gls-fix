@@ -1,6 +1,12 @@
 # AR Design GLS Fix for WooCommerce
 
-Samostatny modul pro GLS automatizaci. Modul navazuje na plugin `gls-shipping-for-woocommerce` a oddeluje GLS provozni automatizaci od `ar-design-dpd`.
+Samostatny bridge/fix modul pro GLS automatizaci. Primarni carrier engine zustava vendor plugin `gls-shipping-for-woocommerce`; tento modul resi kompatibilitu, normalizovana metadata, diagnostiku a doplnkove workflow side effects mimo `ar-design-dpd`.
+
+## Ownership
+
+- `gls-shipping-for-woocommerce`: label generation a primarni GLS carrier engine.
+- `ar-design-gls-fix`: bridge/fix vrstva, metadata normalization, tracking display/sync a doplnkove AR workflow hooks.
+- Workflow status slugy a labely patri do `wp-content/mu-plugins/ar-design-workflow-shared.php`.
 
 ## Funkce
 

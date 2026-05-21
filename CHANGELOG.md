@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.8 - 2026-05-21
+
+- GLS bridge vrstva už nepreberá workflow ownership od vendor pluginu a necháva finálne status rozhodnutia na `gls-shipping-for-woocommerce`.
+- Zrušený zostávajúci legacy tracking cron v AR vrstve, aby sa v produkcii nespúšťali paralelné GLS sync cesty.
+- Tracking summary teraz bezpečne fallbackuje aj na vendor GLS meta dáta, takže admin a zákazník vidia aktuálny stav aj pri bridge-only režime.
+
 ## 1.0.7 - 2026-05-19
 
 - Opravené odpojenie pôvodného DPD order-list callbacku v administrácii, aby sa v produkcii nevykresľoval duplicitný obsah v stĺpci `Export to DPD`.

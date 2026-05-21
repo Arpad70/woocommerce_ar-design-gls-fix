@@ -25,14 +25,7 @@ class Automation
             return;
         }
 
-        $settings = Settings::getDefaultSettings();
-        $shouldComplete = ($settings[Settings::AUTO_COMPLETE_ORDER_OPTION_KEY] ?? 'yes') === 'yes';
-
-        if ($shouldComplete && !$order->has_status(['completed', 'cancelled', 'refunded', 'failed'])) {
-            $order->update_status('completed', __('GLS delivery status confirmed successful delivery.', 'ar-design-gls-fix'));
-        } else {
-            $order->add_order_note(__('GLS delivery status confirmed successful delivery.', 'ar-design-gls-fix'));
-        }
+        $order->add_order_note(__('GLS delivery status confirmed successful delivery. Order workflow status is left to the primary GLS workflow owner.', 'ar-design-gls-fix'));
 
         if (self::shouldSendInvoiceAfterDelivery($order)) {
             $invoiceFile = self::ensureInvoiceFile($order);

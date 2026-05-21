@@ -14,8 +14,14 @@ class GlsBridge
     public static function init(): void
     {
         add_action('gls_label_generated', [__CLASS__, 'syncGeneratedLabel'], 10, 3);
-        add_action('init', [__CLASS__, 'maybeScheduleTrackingCron']);
-        add_action(self::CRON_HOOK, [__CLASS__, 'syncOpenShipments']);
+        add_action('init', [__CLASS__, 'disableLegacyTrackingCron']);
+    }
+
+    public static function disableLegacyTrackingCron(): void
+    {
+        while ($timestamp = wp_next_scheduled(self::CRON_HOOK)) {
+            wp_unschedule_event($timestamp, self::CRON_HOOK);
+        }
     }
 
     public static function maybeScheduleTrackingCron(): void

@@ -69,11 +69,12 @@ class TrackingDisplay
         }
 
         $payloadStatusMeta = self::extractPayloadStatusMeta(is_array($shipment['payload'] ?? null) ? $shipment['payload'] : []);
-        $status = trim((string) ($order->get_meta(Tracking::CURRENT_STATUS_META_KEY, true) ?: ($shipment['status'] ?? '')));
-        $statusLabel = trim((string) ($order->get_meta(Tracking::CURRENT_STATUS_LABEL_META_KEY, true) ?: ($shipment['status_label'] ?? $status)));
-        $statusDescription = trim((string) ($order->get_meta(Tracking::CURRENT_STATUS_DESCRIPTION_META_KEY, true) ?: ($payloadStatusMeta['description'] ?? '')));
-        $statusDate = trim((string) ($order->get_meta(Tracking::CURRENT_STATUS_DATE_META_KEY, true) ?: ($payloadStatusMeta['date'] ?? '')));
-        $statusLocation = trim((string) ($order->get_meta(Tracking::CURRENT_STATUS_LOCATION_META_KEY, true) ?: ($payloadStatusMeta['location'] ?? '')));
+        $vendorStatusMeta = self::extractVendorStatusMeta($order);
+        $status = trim((string) ($order->get_meta(Tracking::CURRENT_STATUS_META_KEY, true) ?: ($vendorStatusMeta['status'] ?? '') ?: ($shipment['status'] ?? '')));
+        $statusLabel = trim((string) ($order->get_meta(Tracking::CURRENT_STATUS_LABEL_META_KEY, true) ?: ($vendorStatusMeta['label'] ?? '') ?: ($shipment['status_label'] ?? $status)));
+        $statusDescription = trim((string) ($order->get_meta(Tracking::CURRENT_STATUS_DESCRIPTION_META_KEY, true) ?: ($vendorStatusMeta['description'] ?? '') ?: ($payloadStatusMeta['description'] ?? '')));
+        $statusDate = trim((string) ($order->get_meta(Tracking::CURRENT_STATUS_DATE_META_KEY, true) ?: ($vendorStatusMeta['date'] ?? '') ?: ($payloadStatusMeta['date'] ?? '')));
+        $statusLocation = trim((string) ($order->get_meta(Tracking::CURRENT_STATUS_LOCATION_META_KEY, true) ?: ($vendorStatusMeta['location'] ?? '') ?: ($payloadStatusMeta['location'] ?? '')));
 
         if ($trackingLinks === [] && trim((string) ($shipment['label_url'] ?? '')) === '' && $statusLabel === '' && $status === '') {
             return [];
@@ -88,8 +89,20 @@ class TrackingDisplay
             'status_description' => $statusDescription,
             'status_date' => $statusDate,
             'status_location' => $statusLocation,
-            'last_sync_at' => trim((string) $order->get_meta(Tracking::LAST_SYNC_AT_META_KEY, true)),
+            'last_sync_at' => trim((string) ($order->get_meta(Tracking::LAST_SYNC_AT_META_KEY, true) ?: ($vendorStatusMeta['last_sync_at'] ?? ''))),
             'last_error' => trim((string) $order->get_meta(Tracking::LAST_SYNC_ERROR_META_KEY, true)),
+        ];
+    }
+
+    private static function extractVendorStatusMeta(WC_Order $order): array
+    {
+        return [
+            'status' => trim((string) $order->get_meta('_gls_tracking_current_status', true)),
+            'label' => trim((string) $order->get_meta('_gls_tracking_current_label', true)),
+            'description' => trim((string) $order->get_meta('_gls_tracking_current_description', true)),
+            'date' => trim((string) $order->get_meta('_gls_tracking_current_date', true)),
+            'location' => trim((string) $order->get_meta('_gls_tracking_current_location', true)),
+            'last_sync_at' => trim((string) $order->get_meta('_gls_tracking_last_sync_at', true)),
         ];
     }
 
