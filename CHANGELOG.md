@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.9 - 2026-05-23
+
+- Release/build pipeline je zladená so spoločným AR Design build skriptom a GitHub release workflow.
+- Pridaný explicitný `uninstall.php`, aby samostatný release artefakt mal definovaný uninstall contract.
+
 ## 1.0.8 - 2026-05-21
 
 - GLS bridge vrstva už nepreberá workflow ownership od vendor pluginu a necháva finálne status rozhodnutia na `gls-shipping-for-woocommerce`.

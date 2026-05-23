@@ -3,7 +3,7 @@
 /*
  * Plugin Name: AR Design GLS Fix for WooCommerce
  * Description: Samostatný GLS fix modul pre WooCommerce spravovaný Arpád Horák. Oddeľuje GLS automatizáciu od AR Design DPD modulu.
- * Version: 1.0.8
+ * Version: 1.0.9
  * Author: Arpád Horák
  * Author URI: https://arpad-horak.cz
  * Update URI: https://github.com/Arpad70/woocommerce_ar-design-gls-fix
@@ -29,13 +29,22 @@ define('AR_DESIGN_GLS_FIX_PLUGIN_PATH', plugin_dir_path(__FILE__));
 define('AR_DESIGN_GLS_FIX_PLUGIN_DIR', $plugin_dir);
 define('AR_DESIGN_GLS_FIX_PLUGIN_INDEX', __FILE__);
 define('AR_DESIGN_GLS_FIX_PLUGIN_WC_MIN_VERSION', '7.0');
-define('AR_DESIGN_GLS_FIX_VERSION', '1.0.8');
+define('AR_DESIGN_GLS_FIX_VERSION', '1.0.9');
 define('AR_DESIGN_GLS_FIX_BASENAME', plugin_basename(__FILE__));
 define('AR_DESIGN_GLS_FIX_REPOSITORY', 'Arpad70/woocommerce_ar-design-gls-fix');
 define('AR_DESIGN_GLS_FIX_TEXT_DOMAIN', 'ar-design-gls-fix');
 
 require_once AR_DESIGN_GLS_FIX_PLUGIN_PATH . 'includes/Updater.php';
 require_once AR_DESIGN_GLS_FIX_PLUGIN_PATH . 'includes/RollbackManager.php';
+require_once AR_DESIGN_GLS_FIX_PLUGIN_PATH . 'includes/helpers.php';
+require_once AR_DESIGN_GLS_FIX_PLUGIN_PATH . 'includes/AdminOrderList.php';
+require_once AR_DESIGN_GLS_FIX_PLUGIN_PATH . 'includes/SurchargeMonitor.php';
+require_once AR_DESIGN_GLS_FIX_PLUGIN_PATH . 'includes/Shipment.php';
+require_once AR_DESIGN_GLS_FIX_PLUGIN_PATH . 'includes/Tracking.php';
+require_once AR_DESIGN_GLS_FIX_PLUGIN_PATH . 'includes/TrackingDisplay.php';
+require_once AR_DESIGN_GLS_FIX_PLUGIN_PATH . 'includes/Automation.php';
+require_once AR_DESIGN_GLS_FIX_PLUGIN_PATH . 'includes/GlsBridge.php';
+require_once AR_DESIGN_GLS_FIX_PLUGIN_PATH . 'includes/ShippingSurcharge.php';
 
 add_action('before_woocommerce_init', function () {
     if (class_exists(\Automattic\WooCommerce\Utilities\FeaturesUtil::class)) {
@@ -59,29 +68,32 @@ add_action('admin_notices', function () {
     <?php
 });
 
-add_action('plugins_loaded', function () {
-    require_once AR_DESIGN_GLS_FIX_PLUGIN_PATH . 'includes/helpers.php';
-    require_once AR_DESIGN_GLS_FIX_PLUGIN_PATH . 'includes/AdminOrderList.php';
-    require_once AR_DESIGN_GLS_FIX_PLUGIN_PATH . 'includes/SurchargeMonitor.php';
-    require_once AR_DESIGN_GLS_FIX_PLUGIN_PATH . 'includes/Settings.php';
-    require_once AR_DESIGN_GLS_FIX_PLUGIN_PATH . 'includes/Shipment.php';
-    require_once AR_DESIGN_GLS_FIX_PLUGIN_PATH . 'includes/Tracking.php';
-    require_once AR_DESIGN_GLS_FIX_PLUGIN_PATH . 'includes/TrackingDisplay.php';
-    require_once AR_DESIGN_GLS_FIX_PLUGIN_PATH . 'includes/Automation.php';
-    require_once AR_DESIGN_GLS_FIX_PLUGIN_PATH . 'includes/GlsBridge.php';
-    require_once AR_DESIGN_GLS_FIX_PLUGIN_PATH . 'includes/ShippingSurcharge.php';
-
-    if (!is_woocommerce_active()) {
-        return;
-    }
-
+add_action('init', function () {
     load_plugin_textdomain(
         AR_DESIGN_GLS_FIX_TEXT_DOMAIN,
         false,
         dirname(plugin_basename(__FILE__)) . '/languages'
     );
 
+});
+
+function ard_gls_fix_bootstrap_woo_runtime(): void
+{
+    if (!is_woocommerce_active()) {
+        return;
+    }
+
     if (!class_exists('WooCommerce') || version_compare(WC()->version, AR_DESIGN_GLS_FIX_PLUGIN_WC_MIN_VERSION, '<')) {
+        return;
+    }
+
+    $settings_class_path = AR_DESIGN_GLS_FIX_PLUGIN_PATH . 'includes/Settings.php';
+
+    if (file_exists($settings_class_path)) {
+        require_once $settings_class_path;
+    }
+
+    if (!class_exists(Settings::class)) {
         return;
     }
 
@@ -92,7 +104,9 @@ add_action('plugins_loaded', function () {
     GlsBridge::init();
     ShippingSurcharge::init();
     TrackingDisplay::init();
-});
+}
+
+add_action('woocommerce_loaded', __NAMESPACE__ . '\\ard_gls_fix_bootstrap_woo_runtime', 20);
 
 $ar_design_gls_fix_updater = new ArDesignGlsFixUpdater(
     AR_DESIGN_GLS_FIX_REPOSITORY,

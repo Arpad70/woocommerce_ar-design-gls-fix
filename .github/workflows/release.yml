@@ -65,11 +65,7 @@ jobs:
       - name: Build Release Zip
         if: steps.eligibility.outputs.publish == 'true'
         run: |
-          rm -rf /tmp/ar-design-gls-fix-release
-          mkdir -p /tmp/ar-design-gls-fix-release/ar-design-gls-fix
-          rsync -a ./ /tmp/ar-design-gls-fix-release/ar-design-gls-fix/ --exclude-from=.distignore
-          cd /tmp/ar-design-gls-fix-release
-          zip -r ar-design-gls-fix.zip ar-design-gls-fix
+          bash scripts/build-plugin.sh
 
       - name: Publish GitHub Release
         if: steps.eligibility.outputs.publish == 'true'
@@ -79,4 +75,4 @@ jobs:
           name: AR Design GLS Fix ${{ steps.version.outputs.tag }}
           generate_release_notes: true
           files: |
-            /tmp/ar-design-gls-fix-release/ar-design-gls-fix.zip
+            build/ar-design-gls-fix-${{ steps.version.outputs.version }}.zip

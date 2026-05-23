@@ -2,3 +2,5 @@
 .git
 build
 *.zip
+release_info.txt
+run_status.txt
