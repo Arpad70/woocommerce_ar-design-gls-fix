@@ -202,8 +202,7 @@ class GlsBridge
     {
         $existingShipment = Shipment::getShipmentData($order);
         $events = self::normalizeTrackingEvents((array) ($trackingData['ParcelStatusList'] ?? []));
-        $currentEvent = $events ? end($events) : [];
-        reset($events);
+        $currentEvent = self::getCurrentTrackingEvent($events);
         $trackingNumbers = self::getTrackingNumbers($order);
         $trackingNumber = (string) ($existingShipment['tracking_number'] ?: ($trackingNumbers[0] ?? ''));
 
@@ -229,9 +228,11 @@ class GlsBridge
                 continue;
             }
 
+            $mappedStatus = self::mapTrackingEventStatus($event);
+
             $normalized[] = [
-                'status' => sanitize_text_field((string) ($event['StatusCode'] ?? '')),
-                'label' => sanitize_text_field((string) ($event['StatusDescription'] ?? ($event['StatusCode'] ?? ''))),
+                'status' => $mappedStatus['status'],
+                'label' => $mappedStatus['label'],
                 'description' => sanitize_text_field((string) ($event['StatusInfo'] ?? '')),
                 'date' => self::normalizeTrackingDate((string) ($event['StatusDate'] ?? '')),
                 'location' => sanitize_text_field((string) ($event['DepotCity'] ?? '')),
@@ -241,6 +242,13 @@ class GlsBridge
             ];
         }
 
+        usort($normalized, [__CLASS__, 'compareTrackingEvents']);
+
+        $currentIndex = self::getCurrentTrackingEventIndex($normalized);
+        if ($currentIndex !== null) {
+            $normalized[$currentIndex]['current'] = true;
+        }
+
         return $normalized;
     }
 
@@ -248,8 +256,7 @@ class GlsBridge
     {
         $payload = isset($shipmentData['payload']) && is_array($shipmentData['payload']) ? $shipmentData['payload'] : [];
         $events = isset($payload['events']) && is_array($payload['events']) ? $payload['events'] : [];
-        $currentEvent = $events ? end($events) : [];
-        reset($events);
+        $currentEvent = self::getCurrentTrackingEvent($events);
 
         $order->update_meta_data(Tracking::CURRENT_STATUS_META_KEY, (string) ($shipmentData['status'] ?? ''));
         $order->update_meta_data(Tracking::CURRENT_STATUS_LABEL_META_KEY, (string) ($shipmentData['status_label'] ?? ''));
@@ -274,6 +281,192 @@ class GlsBridge
         $timestamp = strtotime($value);
 
         return $timestamp ? gmdate('Y-m-d H:i:s', $timestamp) : sanitize_text_field($value);
+    }
+
+    private static function getCurrentTrackingEvent(array $events): array
+    {
+        $currentIndex = self::getCurrentTrackingEventIndex($events);
+
+        return $currentIndex !== null ? (array) $events[$currentIndex] : [];
+    }
+
+    private static function getCurrentTrackingEventIndex(array $events): ?int
+    {
+        $currentIndex = null;
+        $currentEvent = null;
+
+        foreach ($events as $index => $event) {
+            if (!is_array($event)) {
+                continue;
+            }
+
+            if ($currentEvent === null || self::compareTrackingEvents($currentEvent, $event) < 0) {
+                $currentEvent = $event;
+                $currentIndex = $index;
+            }
+        }
+
+        return $currentIndex;
+    }
+
+    private static function compareTrackingEvents(array $left, array $right): int
+    {
+        $dateComparison = strcmp((string) ($left['date'] ?? ''), (string) ($right['date'] ?? ''));
+        if ($dateComparison !== 0) {
+            return $dateComparison;
+        }
+
+        return self::getTrackingStatusPriority((string) ($left['status'] ?? '')) <=> self::getTrackingStatusPriority((string) ($right['status'] ?? ''));
+    }
+
+    private static function getTrackingStatusPriority(string $status): int
+    {
+        $priorities = [
+            'sender_received_return' => 100,
+            'returning_to_sender' => 90,
+            'delivered' => 80,
+            'out_for_delivery' => 70,
+            'in_transit' => 60,
+            'picked_up' => 50,
+            'data_sent' => 10,
+        ];
+
+        return isset($priorities[$status]) ? (int) $priorities[$status] : 0;
+    }
+
+    private static function mapTrackingEventStatus(array $event): array
+    {
+        $statusCode = sanitize_text_field((string) ($event['StatusCode'] ?? ''));
+        $statusDescription = sanitize_text_field((string) ($event['StatusDescription'] ?? ''));
+        $statusInfo = sanitize_text_field((string) ($event['StatusInfo'] ?? ''));
+        $normalized = self::normalizeText($statusDescription . ' ' . $statusInfo . ' ' . $statusCode);
+
+        $status = $statusCode !== '' ? $statusCode : 'tracking_update';
+        $label = $statusDescription !== '' ? $statusDescription : ($statusCode !== '' ? $statusCode : __('Tracking update', 'ar-design-gls-fix'));
+
+        $statusFromCode = self::mapTrackingStatusCode($statusCode);
+        if ($statusFromCode !== []) {
+            return $statusFromCode;
+        }
+
+        if (self::containsAny($normalized, ['sender received', 'returned to sender completed', 'return completed', 'shipper received', 'received by sender'])) {
+            return [
+                'status' => 'sender_received_return',
+                'label' => __('Returned to sender', 'ar-design-gls-fix'),
+            ];
+        }
+
+        if (self::containsAny($normalized, ['return to sender', 'returning to sender', 'returned to sender', 'undeliverable', 'delivery failed', 'refused', 'back to sender'])) {
+            return [
+                'status' => 'returning_to_sender',
+                'label' => __('Returning to sender', 'ar-design-gls-fix'),
+            ];
+        }
+
+        if (self::containsAny($normalized, ['delivered', 'successful delivery', 'successfully delivered', 'signed by consignee', 'handed over to consignee'])) {
+            return [
+                'status' => 'delivered',
+                'label' => __('Delivered', 'ar-design-gls-fix'),
+            ];
+        }
+
+        if (self::containsAny($normalized, ['out for delivery', 'courier delivery', 'delivery route', 'delivery list scan'])) {
+            return [
+                'status' => 'out_for_delivery',
+                'label' => __('Out for delivery', 'ar-design-gls-fix'),
+            ];
+        }
+
+        if (self::containsAny($normalized, ['in transit', 'transit', 'sorting', 'depot', 'hub', 'linehaul', 'transport', 'depot entry', 'rollcarte check'])) {
+            return [
+                'status' => 'in_transit',
+                'label' => __('In transit', 'ar-design-gls-fix'),
+            ];
+        }
+
+        if (self::containsAny($normalized, ['picked up', 'pickup', 'collected', 'accepted by courier', 'taken over'])) {
+            return [
+                'status' => 'picked_up',
+                'label' => __('Picked up by courier', 'ar-design-gls-fix'),
+            ];
+        }
+
+        return [
+            'status' => $status,
+            'label' => $label,
+        ];
+    }
+
+    private static function mapTrackingStatusCode(string $statusCode): array
+    {
+        $statusCode = trim($statusCode);
+        if ($statusCode === '') {
+            return [];
+        }
+
+        $statusMap = [
+            'sender_received_return' => [],
+            'returning_to_sender' => [],
+            'delivered' => ['05'],
+            'out_for_delivery' => ['04'],
+            'in_transit' => ['01', '03', '10'],
+            'picked_up' => ['86'],
+            'data_sent' => ['51', '52'],
+        ];
+
+        foreach ($statusMap as $status => $codes) {
+            if (!in_array($statusCode, $codes, true)) {
+                continue;
+            }
+
+            return [
+                'status' => $status,
+                'label' => self::getTrackingStatusLabel($status),
+            ];
+        }
+
+        return [];
+    }
+
+    private static function getTrackingStatusLabel(string $status): string
+    {
+        switch ($status) {
+            case 'sender_received_return':
+                return __('Returned to sender', 'ar-design-gls-fix');
+            case 'returning_to_sender':
+                return __('Returning to sender', 'ar-design-gls-fix');
+            case 'delivered':
+                return __('Delivered', 'ar-design-gls-fix');
+            case 'out_for_delivery':
+                return __('Out for delivery', 'ar-design-gls-fix');
+            case 'in_transit':
+                return __('In transit', 'ar-design-gls-fix');
+            case 'picked_up':
+                return __('Picked up by courier', 'ar-design-gls-fix');
+            case 'data_sent':
+                return __('Shipment data sent to GLS', 'ar-design-gls-fix');
+            default:
+                return __('Tracking update', 'ar-design-gls-fix');
+        }
+    }
+
+    private static function normalizeText(string $value): string
+    {
+        $value = remove_accents(wp_strip_all_tags($value));
+        $value = strtolower($value);
+
+        return trim((string) preg_replace('/\s+/', ' ', $value));
+    }
+
+    private static function containsAny(string $haystack, array $needles): bool
+    {
+        foreach ($needles as $needle) {
+            if ($needle !== '' && strpos($haystack, self::normalizeText((string) $needle)) !== false) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public static function getTrackingNumbers(WC_Order $order): array

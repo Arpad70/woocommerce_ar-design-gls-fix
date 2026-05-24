@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.10 - 2026-05-24
+
+- Opravený výber aktuálneho GLS tracking eventu v AR bridge vrstve: eventy sa teraz normalizujú na zmysluplné workflow stavy, zoradia podľa dátumu a ako current sa vyberie skutočne najnovší event namiesto poslednej položky z API poľa.
+- Tracking snapshot meta (`dpd_shipment_tracking_*` a shared shipment stav) sa už neprepíšu späť na historické `Data sent`, keď GLS API vráti `ParcelStatusList` v zostupnom poradí od najnovšej udalosti.
+
 ## 1.0.9 - 2026-05-23
 
 - Release/build pipeline je zladená so spoločným AR Design build skriptom a GitHub release workflow.
