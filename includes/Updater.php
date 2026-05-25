@@ -180,6 +180,7 @@ final class ArDesignGlsFixUpdater
     private function extractZipAssetUrl(array $releaseData): string
     {
         $assets = isset($releaseData['assets']) && is_array($releaseData['assets']) ? $releaseData['assets'] : array();
+        $versionedFallback = '';
 
         foreach ($assets as $asset) {
             if (! is_array($asset)) {
@@ -188,17 +189,22 @@ final class ArDesignGlsFixUpdater
 
             $name = isset($asset['name']) ? (string) $asset['name'] : '';
             $url = isset($asset['browser_download_url']) ? (string) $asset['browser_download_url'] : '';
+            $normalizedName = strtolower($name);
 
-            if ('' === $url || '.zip' !== substr(strtolower($name), -4)) {
+            if ('' === $url || '.zip' !== substr($normalizedName, -4)) {
                 continue;
             }
 
-            if ('ar-design-gls-fix.zip' === strtolower($name)) {
+            if ('ar-design-gls-fix.zip' === $normalizedName) {
                 return $url;
+            }
+
+            if (0 === strpos($normalizedName, 'ar-design-gls-fix-')) {
+                $versionedFallback = $url;
             }
         }
 
-        return '';
+        return $versionedFallback;
     }
 
     private function getCacheKey(): string

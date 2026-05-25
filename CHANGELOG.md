@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.12 - 2026-05-25
+
+- GitHub updater now accepts both the legacy `ar-design-gls-fix.zip` asset name and versioned release ZIP names such as `ar-design-gls-fix-1.0.12.zip`, restoring WordPress update detection for the current release pipeline.
+
 ## 1.0.11 - 2026-05-24
 
 - Tlačidlo `Stiahnuť štítok` sa po doručení GLS zásielky v detaile objednávky aj v prehľade objednávok už nevykresľuje ako aktívny odkaz, ale ako disabled tlačidlo bez možnosti stiahnutia štítku.
