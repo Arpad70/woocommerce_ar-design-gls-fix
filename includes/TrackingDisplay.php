@@ -83,6 +83,7 @@ class TrackingDisplay
         return [
             'carrier_label' => 'GLS',
             'label_url' => esc_url_raw((string) ($shipment['label_url'] ?? '')),
+            'label_download_disabled' => Shipment::isDelivered($order),
             'tracking_links' => $trackingLinks,
             'status' => $status,
             'status_label' => $statusLabel,
@@ -171,13 +172,23 @@ class TrackingDisplay
                 )); ?></strong><br>
 
                 <?php if ($view['label_url'] !== '') : ?>
-                    <a class="button" href="<?php echo esc_url($view['label_url']); ?>" target="_blank" rel="noopener noreferrer" style="margin: 6px 0 8px;">
-                        <?php echo esc_html(sprintf(
-                            /* translators: %s: carrier label shown in the shipment summary, for example GLS. */
-                            __('Download %s label', 'ar-design-gls-fix'),
-                            $view['carrier_label']
-                        )); ?>
-                    </a>
+                    <?php if (!empty($view['label_download_disabled'])) : ?>
+                        <span class="button disabled" aria-disabled="true" style="margin: 6px 0 8px; opacity: 0.6; cursor: not-allowed;">
+                            <?php echo esc_html(sprintf(
+                                /* translators: %s: carrier label shown in the shipment summary, for example GLS. */
+                                __('Download %s label', 'ar-design-gls-fix'),
+                                $view['carrier_label']
+                            )); ?>
+                        </span>
+                    <?php else : ?>
+                        <a class="button" href="<?php echo esc_url($view['label_url']); ?>" target="_blank" rel="noopener noreferrer" style="margin: 6px 0 8px;">
+                            <?php echo esc_html(sprintf(
+                                /* translators: %s: carrier label shown in the shipment summary, for example GLS. */
+                                __('Download %s label', 'ar-design-gls-fix'),
+                                $view['carrier_label']
+                            )); ?>
+                        </a>
+                    <?php endif; ?>
                     <br>
                 <?php endif; ?>
 

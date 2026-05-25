@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.11 - 2026-05-24
+
+- Tlačidlo `Stiahnuť štítok` sa po doručení GLS zásielky v detaile objednávky aj v prehľade objednávok už nevykresľuje ako aktívny odkaz, ale ako disabled tlačidlo bez možnosti stiahnutia štítku.
+- Kontrola doručenia používa shared shipment stav, tracking snapshot meta aj vendor GLS tracking meta, takže disabled stav funguje konzistentne aj pri starších objednávkach s rôznym zdrojom tracking dát.
+
 ## 1.0.10 - 2026-05-24
 
 - Opravený výber aktuálneho GLS tracking eventu v AR bridge vrstve: eventy sa teraz normalizujú na zmysluplné workflow stavy, zoradia podľa dátumu a ako current sa vyberie skutočne najnovší event namiesto poslednej položky z API poľa.

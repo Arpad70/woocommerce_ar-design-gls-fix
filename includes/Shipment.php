@@ -85,6 +85,35 @@ class Shipment
         return $shipmentData;
     }
 
+    public static function isDelivered(\WC_Order $order): bool
+    {
+        $shipment = self::getShipmentData($order);
+        $shipmentStatus = (string) ($shipment['status'] ?? '');
+        $shipmentStatusLabel = (string) ($shipment['status_label'] ?? '');
+
+        if (Tracking::isDeliveredStatus($shipmentStatus, $shipmentStatusLabel)) {
+            return true;
+        }
+
+        if ((string) $order->get_meta(self::DELIVERED_AT_META_KEY, true) !== '') {
+            return true;
+        }
+
+        $trackingStatus = (string) $order->get_meta(Tracking::CURRENT_STATUS_META_KEY, true);
+        $trackingStatusLabel = (string) $order->get_meta(Tracking::CURRENT_STATUS_LABEL_META_KEY, true);
+        $trackingStatusDescription = (string) $order->get_meta(Tracking::CURRENT_STATUS_DESCRIPTION_META_KEY, true);
+
+        if (Tracking::isDeliveredStatus($trackingStatus, $trackingStatusLabel, $trackingStatusDescription)) {
+            return true;
+        }
+
+        $vendorStatus = (string) $order->get_meta('_gls_tracking_current_status', true);
+        $vendorLabel = (string) $order->get_meta('_gls_tracking_current_label', true);
+        $vendorDescription = (string) $order->get_meta('_gls_tracking_current_description', true);
+
+        return Tracking::isDeliveredStatus($vendorStatus, $vendorLabel, $vendorDescription);
+    }
+
     private static function canUpdateSharedShipmentData(\WC_Order $order, string $carrier): bool
     {
         $existingCarrier = (string) $order->get_meta(self::CARRIER_META_KEY, true);

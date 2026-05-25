@@ -67,10 +67,15 @@ final class AdminOrderList
         }
 
         $labelUrl = self::getLabelUrl($order);
+        $labelDownloadDisabled = Shipment::isDelivered($order);
         $trackingNumbers = self::getTrackingNumbers($order);
 
         if ('' !== $labelUrl) {
-            echo '<p><a class="button" href="' . esc_url($labelUrl) . '" target="_blank" rel="noopener noreferrer">Stiahnuť štítok</a></p>';
+            if ($labelDownloadDisabled) {
+                echo '<p><span class="button disabled" aria-disabled="true" style="opacity: 0.6; cursor: not-allowed;">Stiahnuť štítok</span></p>';
+            } else {
+                echo '<p><a class="button" href="' . esc_url($labelUrl) . '" target="_blank" rel="noopener noreferrer">Stiahnuť štítok</a></p>';
+            }
         }
 
         if ([] !== $trackingNumbers) {
