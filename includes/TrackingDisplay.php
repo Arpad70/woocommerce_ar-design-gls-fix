@@ -70,11 +70,11 @@ class TrackingDisplay
 
         $payloadStatusMeta = self::extractPayloadStatusMeta(is_array($shipment['payload'] ?? null) ? $shipment['payload'] : []);
         $vendorStatusMeta = self::extractVendorStatusMeta($order);
-        $status = trim((string) ($order->get_meta(Tracking::CURRENT_STATUS_META_KEY, true) ?: ($vendorStatusMeta['status'] ?? '') ?: ($shipment['status'] ?? '')));
-        $statusLabel = trim((string) ($order->get_meta(Tracking::CURRENT_STATUS_LABEL_META_KEY, true) ?: ($vendorStatusMeta['label'] ?? '') ?: ($shipment['status_label'] ?? $status)));
-        $statusDescription = trim((string) ($order->get_meta(Tracking::CURRENT_STATUS_DESCRIPTION_META_KEY, true) ?: ($vendorStatusMeta['description'] ?? '') ?: ($payloadStatusMeta['description'] ?? '')));
-        $statusDate = trim((string) ($order->get_meta(Tracking::CURRENT_STATUS_DATE_META_KEY, true) ?: ($vendorStatusMeta['date'] ?? '') ?: ($payloadStatusMeta['date'] ?? '')));
-        $statusLocation = trim((string) ($order->get_meta(Tracking::CURRENT_STATUS_LOCATION_META_KEY, true) ?: ($vendorStatusMeta['location'] ?? '') ?: ($payloadStatusMeta['location'] ?? '')));
+        $status = trim((string) (Tracking::getCurrentStatusMeta($order) ?: ($vendorStatusMeta['status'] ?? '') ?: ($shipment['status'] ?? '')));
+        $statusLabel = trim((string) (Tracking::getCurrentStatusLabelMeta($order) ?: ($vendorStatusMeta['label'] ?? '') ?: ($shipment['status_label'] ?? $status)));
+        $statusDescription = trim((string) (Tracking::getCurrentStatusDescriptionMeta($order) ?: ($vendorStatusMeta['description'] ?? '') ?: ($payloadStatusMeta['description'] ?? '')));
+        $statusDate = trim((string) (Tracking::getCurrentStatusDateMeta($order) ?: ($vendorStatusMeta['date'] ?? '') ?: ($payloadStatusMeta['date'] ?? '')));
+        $statusLocation = trim((string) (Tracking::getCurrentStatusLocationMeta($order) ?: ($vendorStatusMeta['location'] ?? '') ?: ($payloadStatusMeta['location'] ?? '')));
 
         if ($trackingLinks === [] && trim((string) ($shipment['label_url'] ?? '')) === '' && $statusLabel === '' && $status === '') {
             return [];
@@ -90,8 +90,8 @@ class TrackingDisplay
             'status_description' => $statusDescription,
             'status_date' => $statusDate,
             'status_location' => $statusLocation,
-            'last_sync_at' => trim((string) ($order->get_meta(Tracking::LAST_SYNC_AT_META_KEY, true) ?: ($vendorStatusMeta['last_sync_at'] ?? ''))),
-            'last_error' => trim((string) $order->get_meta(Tracking::LAST_SYNC_ERROR_META_KEY, true)),
+            'last_sync_at' => trim((string) (Tracking::getLastSyncAtMeta($order) ?: ($vendorStatusMeta['last_sync_at'] ?? ''))),
+            'last_error' => trim((string) Tracking::getLastSyncErrorMeta($order)),
         ];
     }
 

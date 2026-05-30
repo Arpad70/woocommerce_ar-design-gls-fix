@@ -6,6 +6,8 @@ defined('ABSPATH') || exit;
 
 class Shipment
 {
+    private const SHIPMENT_DELIVERED_EVENT = 'ard_shipping_shipment_delivered';
+
     public const CARRIER_META_KEY = '_ard_shipping_carrier';
     public const REFERENCE_META_KEY = '_ard_shipping_reference';
     public const PRIMARY_TRACKING_NUMBER_META_KEY = '_ard_shipping_tracking_number';
@@ -80,7 +82,7 @@ class Shipment
         $order->update_meta_data(self::DELIVERED_AT_META_KEY, $deliveredAt);
         $order->save_meta_data();
 
-        do_action('ard_shipping_shipment_delivered', $order->get_id(), $shipmentData, $order);
+		do_action(self::getShipmentDeliveredEventName(), $order->get_id(), $shipmentData, $order);
 
         return $shipmentData;
     }
@@ -99,9 +101,9 @@ class Shipment
             return true;
         }
 
-        $trackingStatus = (string) $order->get_meta(Tracking::CURRENT_STATUS_META_KEY, true);
-        $trackingStatusLabel = (string) $order->get_meta(Tracking::CURRENT_STATUS_LABEL_META_KEY, true);
-        $trackingStatusDescription = (string) $order->get_meta(Tracking::CURRENT_STATUS_DESCRIPTION_META_KEY, true);
+		$trackingStatus = Tracking::getCurrentStatusMeta($order);
+		$trackingStatusLabel = Tracking::getCurrentStatusLabelMeta($order);
+		$trackingStatusDescription = Tracking::getCurrentStatusDescriptionMeta($order);
 
         if (Tracking::isDeliveredStatus($trackingStatus, $trackingStatusLabel, $trackingStatusDescription)) {
             return true;
@@ -142,5 +144,12 @@ class Shipment
         }
 
         return false;
+    }
+
+    private static function getShipmentDeliveredEventName(): string
+    {
+        return defined('ARD_WORKFLOW_EVENT_SHIPMENT_DELIVERED')
+            ? (string) ARD_WORKFLOW_EVENT_SHIPMENT_DELIVERED
+            : self::SHIPMENT_DELIVERED_EVENT;
     }
 }

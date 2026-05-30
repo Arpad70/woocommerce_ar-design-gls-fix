@@ -2,6 +2,8 @@
 
 namespace ArDesign\GlsFix;
 
+use ArDesign\GlsFix\Shipment;
+use ArDesign\GlsFix\Tracking;
 use WC_Order;
 
 defined('ABSPATH') || exit;
@@ -9,33 +11,20 @@ defined('ABSPATH') || exit;
 class GlsBridge
 {
     public const CARRIER = 'gls';
-    public const CRON_HOOK = 'ard_shipping_gls_tracking_sync_event';
+    private const LEGACY_TRACKING_CRON_HOOK = 'ard_shipping_gls_tracking_sync_event';
+	private const SHIPMENT_CREATED_EVENT = 'ard_shipping_shipment_created';
+	private const SHIPMENT_UPDATED_EVENT = 'ard_shipping_shipment_updated';
 
     public static function init(): void
     {
         add_action('gls_label_generated', [__CLASS__, 'syncGeneratedLabel'], 10, 3);
-        add_action('init', [__CLASS__, 'disableLegacyTrackingCron']);
+        add_action('init', [__CLASS__, 'clearLegacyTrackingCronQueue']);
     }
 
-    public static function disableLegacyTrackingCron(): void
+    public static function clearLegacyTrackingCronQueue(): void
     {
-        while ($timestamp = wp_next_scheduled(self::CRON_HOOK)) {
-            wp_unschedule_event($timestamp, self::CRON_HOOK);
-        }
-    }
-
-    public static function maybeScheduleTrackingCron(): void
-    {
-        if (!Settings::isTrackingEnabled() || !self::ensureApiServiceLoaded()) {
-            while ($timestamp = wp_next_scheduled(self::CRON_HOOK)) {
-                wp_unschedule_event($timestamp, self::CRON_HOOK);
-            }
-
-            return;
-        }
-
-        if (!wp_next_scheduled(self::CRON_HOOK)) {
-            wp_schedule_event(time() + (10 * MINUTE_IN_SECONDS), 'hourly', self::CRON_HOOK);
+        while ($timestamp = wp_next_scheduled(self::LEGACY_TRACKING_CRON_HOOK)) {
+            wp_unschedule_event($timestamp, self::LEGACY_TRACKING_CRON_HOOK);
         }
     }
 
@@ -55,8 +44,8 @@ class GlsBridge
         Shipment::storeShipmentData($order, $shipmentData);
         $order->save_meta_data();
 
-        do_action('ard_shipping_shipment_created', $order->get_id(), $shipmentData, $order);
-        do_action('ard_shipping_shipment_updated', $order->get_id(), $shipmentData, $order);
+		do_action(self::getShipmentCreatedEventName(), $order->get_id(), $shipmentData, $order);
+		do_action(self::getShipmentUpdatedEventName(), $order->get_id(), $shipmentData, $order);
     }
 
     public static function isGlsOrder(WC_Order $order): bool
@@ -85,47 +74,6 @@ class GlsBridge
         }
 
         return false;
-    }
-
-    public static function syncOpenShipments(): void
-    {
-        if (!Settings::isTrackingEnabled() || !self::ensureApiServiceLoaded()) {
-            return;
-        }
-
-        $orders = wc_get_orders([
-            'limit' => -1,
-            'return' => 'objects',
-            'meta_query' => [
-                [
-                    'key' => Shipment::CARRIER_META_KEY,
-                    'value' => self::CARRIER,
-                ],
-                [
-                    'key' => Shipment::PRIMARY_TRACKING_NUMBER_META_KEY,
-                    'compare' => 'EXISTS',
-                ],
-            ],
-        ]);
-
-        foreach ($orders as $order) {
-            if (!$order instanceof WC_Order || !self::shouldSyncOrder($order)) {
-                continue;
-            }
-
-            self::syncOrderTracking($order);
-        }
-    }
-
-    public static function shouldSyncOrder(WC_Order $order): bool
-    {
-        if ($order->has_status(['cancelled', 'refunded', 'failed'])) {
-            return false;
-        }
-
-        $shipment = Shipment::getShipmentData($order);
-
-        return !Tracking::isTerminalStatus((string) ($shipment['status'] ?? ''));
     }
 
     public static function syncOrderTracking(WC_Order $order): bool
@@ -158,7 +106,7 @@ class GlsBridge
             self::storeTrackingSnapshot($order, $shipmentData);
             $order->save_meta_data();
 
-            do_action('ard_shipping_shipment_updated', $order->get_id(), $shipmentData, $order);
+			do_action(self::getShipmentUpdatedEventName(), $order->get_id(), $shipmentData, $order);
 
             if (Tracking::isDeliveredStatus((string) ($shipmentData['status'] ?? ''), (string) ($shipmentData['status_label'] ?? ''), (string) ($trackingData['StatusInfo'] ?? ''))) {
                 Shipment::markDelivered($order, $shipmentData);
@@ -258,14 +206,16 @@ class GlsBridge
         $events = isset($payload['events']) && is_array($payload['events']) ? $payload['events'] : [];
         $currentEvent = self::getCurrentTrackingEvent($events);
 
-        $order->update_meta_data(Tracking::CURRENT_STATUS_META_KEY, (string) ($shipmentData['status'] ?? ''));
-        $order->update_meta_data(Tracking::CURRENT_STATUS_LABEL_META_KEY, (string) ($shipmentData['status_label'] ?? ''));
-        $order->update_meta_data(Tracking::CURRENT_STATUS_DESCRIPTION_META_KEY, (string) ($currentEvent['description'] ?? ''));
-        $order->update_meta_data(Tracking::CURRENT_STATUS_DATE_META_KEY, (string) ($currentEvent['date'] ?? current_time('mysql')));
-        $order->update_meta_data(Tracking::CURRENT_STATUS_LOCATION_META_KEY, (string) ($currentEvent['location'] ?? ''));
-        $order->update_meta_data(Tracking::LAST_SYNC_AT_META_KEY, current_time('mysql'));
-        $order->delete_meta_data(Tracking::LAST_SYNC_ERROR_META_KEY);
-        $order->update_meta_data(Tracking::STATUS_HISTORY_META_KEY, Tracking::mergeTrackingHistory($order, $events));
+        Tracking::storeSnapshot($order, [
+            'status' => (string) ($shipmentData['status'] ?? ''),
+            'label' => (string) ($shipmentData['status_label'] ?? ''),
+            'description' => (string) ($currentEvent['description'] ?? ''),
+            'date' => (string) ($currentEvent['date'] ?? current_time('mysql')),
+            'location' => (string) ($currentEvent['location'] ?? ''),
+            'last_sync_at' => current_time('mysql'),
+            'last_error' => '',
+            'history' => Tracking::mergeTrackingHistory($order, $events),
+        ]);
     }
 
     public static function normalizeTrackingDate(string $value): string
@@ -531,5 +481,19 @@ class GlsBridge
         }
 
         return class_exists('GLS_Shipping_API_Service');
+    }
+
+    private static function getShipmentCreatedEventName(): string
+    {
+        return defined('ARD_WORKFLOW_EVENT_SHIPMENT_CREATED')
+            ? (string) ARD_WORKFLOW_EVENT_SHIPMENT_CREATED
+            : self::SHIPMENT_CREATED_EVENT;
+    }
+
+    private static function getShipmentUpdatedEventName(): string
+    {
+        return defined('ARD_WORKFLOW_EVENT_SHIPMENT_UPDATED')
+            ? (string) ARD_WORKFLOW_EVENT_SHIPMENT_UPDATED
+            : self::SHIPMENT_UPDATED_EVENT;
     }
 }
