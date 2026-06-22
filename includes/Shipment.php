@@ -2,7 +2,11 @@
 
 namespace ArDesign\GlsFix;
 
+use ArDesign\Shared\Shipping\DeliveryWorkflowHelper;
+
 defined('ABSPATH') || exit;
+
+require_once WP_PLUGIN_DIR . '/ar-design-shared-support/includes/shipping/DeliveryWorkflowHelper.php';
 
 class Shipment
 {
@@ -118,13 +122,12 @@ class Shipment
 
     private static function canUpdateSharedShipmentData(\WC_Order $order, string $carrier): bool
     {
-        $existingCarrier = (string) $order->get_meta(self::CARRIER_META_KEY, true);
-
-        if ($existingCarrier === '' || $existingCarrier === $carrier) {
-            return true;
-        }
-
-        return self::orderUsesCarrier($order, $carrier);
+        return DeliveryWorkflowHelper::canUpdateSharedShipmentData(
+            $order,
+            $carrier,
+            static fn (\WC_Order $order, string $carrier): bool => self::orderUsesCarrier($order, $carrier),
+            self::CARRIER_META_KEY
+        );
     }
 
     private static function orderUsesCarrier(\WC_Order $order, string $carrier): bool
@@ -133,23 +136,14 @@ class Shipment
             return false;
         }
 
-        foreach ($order->get_shipping_methods() as $shippingMethod) {
-            if (!is_object($shippingMethod) || !method_exists($shippingMethod, 'get_method_id')) {
-                continue;
-            }
-
-            if (false !== strpos(sanitize_key((string) $shippingMethod->get_method_id()), 'gls')) {
-                return true;
-            }
-        }
-
-        return false;
+        return DeliveryWorkflowHelper::orderHasMatchingShippingMethod(
+            $order,
+            static fn (string $methodId): bool => false !== strpos($methodId, 'gls')
+        );
     }
 
     private static function getShipmentDeliveredEventName(): string
     {
-        return defined('ARD_WORKFLOW_EVENT_SHIPMENT_DELIVERED')
-            ? (string) ARD_WORKFLOW_EVENT_SHIPMENT_DELIVERED
-            : self::SHIPMENT_DELIVERED_EVENT;
+        return DeliveryWorkflowHelper::getWorkflowEventName('ARD_WORKFLOW_EVENT_SHIPMENT_DELIVERED', self::SHIPMENT_DELIVERED_EVENT);
     }
 }

@@ -2,9 +2,12 @@
 
 namespace ArDesign\GlsFix;
 
+use ArDesign\Shared\Shipping\DeliveryWorkflowHelper;
 use WC_Order;
 
 defined('ABSPATH') || exit;
+
+require_once WP_PLUGIN_DIR . '/ar-design-shared-support/includes/shipping/DeliveryWorkflowHelper.php';
 
 class Automation
 {
@@ -48,44 +51,21 @@ class Automation
 
     public static function shouldSendInvoiceAfterDelivery(WC_Order $order): bool
     {
-        $codPaymentMethods = (array) apply_filters('ard_gls_fix_cod_payment_method_ids', ['cod'], $order);
-
-        return in_array($order->get_payment_method(), $codPaymentMethods, true);
+        return DeliveryWorkflowHelper::shouldSendInvoiceAfterDelivery($order, 'ard_gls_fix_cod_payment_method_ids');
     }
 
     public static function ensureInvoiceFile(WC_Order $order): ?string
     {
-		if (function_exists('ard_workflow_get_invoice_file_for_order')) {
-            return \ard_workflow_get_invoice_file_for_order($order);
-		}
-
-		if (!function_exists('wcpdf_get_document') || !function_exists('wcpdf_get_document_file')) {
-			return null;
-		}
-
-		$document = wcpdf_get_document('invoice', $order, true);
-		if (!$document) {
-			return null;
-		}
-
-		$file = wcpdf_get_document_file($document, 'pdf');
-
-		return $file && file_exists($file) ? $file : null;
+        return DeliveryWorkflowHelper::ensureInvoiceFile($order);
     }
 
     private static function shouldHandleDeliveryWorkflowLocally(WC_Order $order, array $shipmentData): bool
     {
-        $owner = function_exists('apply_filters')
-            ? (string) apply_filters('ard_shipping_delivery_workflow_owner', 'carrier', $order, $shipmentData)
-            : 'carrier';
-
-        return 'carrier' === $owner;
+        return DeliveryWorkflowHelper::shouldHandleDeliveryWorkflowLocally($order, $shipmentData);
     }
 
 	private static function getDeliveryEventName(): string
 	{
-		return defined('ARD_WORKFLOW_EVENT_SHIPMENT_DELIVERED')
-			? (string) ARD_WORKFLOW_EVENT_SHIPMENT_DELIVERED
-			: self::DELIVERY_EVENT;
+		return DeliveryWorkflowHelper::getDeliveryEventName(self::DELIVERY_EVENT);
 	}
 }

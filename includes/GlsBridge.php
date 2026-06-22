@@ -2,11 +2,14 @@
 
 namespace ArDesign\GlsFix;
 
+use ArDesign\Shared\Shipping\DeliveryWorkflowHelper;
 use ArDesign\GlsFix\Shipment;
 use ArDesign\GlsFix\Tracking;
 use WC_Order;
 
 defined('ABSPATH') || exit;
+
+require_once WP_PLUGIN_DIR . '/ar-design-shared-support/includes/shipping/DeliveryWorkflowHelper.php';
 
 class GlsBridge
 {
@@ -63,17 +66,10 @@ class GlsBridge
             return true;
         }
 
-        foreach ($order->get_shipping_methods() as $shippingMethod) {
-            if (!is_object($shippingMethod) || !method_exists($shippingMethod, 'get_method_id')) {
-                continue;
-            }
-
-            if (false !== strpos(sanitize_key((string) $shippingMethod->get_method_id()), 'gls')) {
-                return true;
-            }
-        }
-
-        return false;
+        return DeliveryWorkflowHelper::orderHasMatchingShippingMethod(
+            $order,
+            static fn (string $methodId): bool => false !== strpos($methodId, 'gls')
+        );
     }
 
     public static function syncOrderTracking(WC_Order $order): bool
@@ -485,15 +481,11 @@ class GlsBridge
 
     private static function getShipmentCreatedEventName(): string
     {
-        return defined('ARD_WORKFLOW_EVENT_SHIPMENT_CREATED')
-            ? (string) ARD_WORKFLOW_EVENT_SHIPMENT_CREATED
-            : self::SHIPMENT_CREATED_EVENT;
+        return DeliveryWorkflowHelper::getWorkflowEventName('ARD_WORKFLOW_EVENT_SHIPMENT_CREATED', self::SHIPMENT_CREATED_EVENT);
     }
 
     private static function getShipmentUpdatedEventName(): string
     {
-        return defined('ARD_WORKFLOW_EVENT_SHIPMENT_UPDATED')
-            ? (string) ARD_WORKFLOW_EVENT_SHIPMENT_UPDATED
-            : self::SHIPMENT_UPDATED_EVENT;
+        return DeliveryWorkflowHelper::getWorkflowEventName('ARD_WORKFLOW_EVENT_SHIPMENT_UPDATED', self::SHIPMENT_UPDATED_EVENT);
     }
 }
